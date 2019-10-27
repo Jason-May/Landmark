@@ -57,7 +57,10 @@ function serialize(str){
 function getPoints(){
     const Http = new XMLHttpRequest();
     const url = '/points';
-    var new_points = [];
+    var new_points = {
+      type:'FeatureCollection',
+      features: []
+    }
     fetch(url).then(function(response) {
         response.text().then(function(text) {
           console.log(text);
@@ -83,30 +86,37 @@ function getPoints(){
             document.getElementById('exploreContainer').appendChild(card);
 
             // adding points
-            new_points.push({
-                type:'FeatureCollection',
-                features: [{
+            new_points.features.push(
+                {
                     type: 'Feature',
                     geometry: {
                         type: 'Point',
-                        coordinates:[x[j]["latitude"],x[j]["longitude"]]
+                        coordinates:[x[j]["longitude"],x[j]["latitude"]]
                     },
                     properties: {
                         title: x[j]["name"],
                         description: x[j]["description"]
                     }
-                }]
-            })
-            map.addSource("landmarks", {
-                type:"geojson",
-                data: new_points,
-                cluster: true,
-                clusterMaxZoom: 14, // Max zoom to cluster points on
-                clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
-            })
+                }
+            )
+
+            // add markers to map
+            new_points.features.forEach(function(marker) {
+              // create a HTML element for each feature
+              var el = document.createElement('div');
+              el.className = 'marker';
+
+              // make a marker for each feature and add to the map
+              new mapboxgl.Marker(el)
+                .setLngLat(marker.geometry.coordinates)
+                .setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
+                .setHTML('<h3>' + marker.properties.title + '</h3><p>' + marker.properties.description + '</p>'))
+                .addTo(map);
+            });
+
         }
-        });
-      });
+    });
+  });
 }
 
 
@@ -122,10 +132,9 @@ map.on('load', function() {
         clusterMaxZoom: 14, // Max zoom to cluster points on
         clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
     });
-    var src = "landmarks"
+    var src = "earthquakes"
 
-    getPoints();
-    while (map.getSource(src) == null) {};
+    getPoints()
 
     map.addLayer({
         id: "clusters",
