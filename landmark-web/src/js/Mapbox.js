@@ -57,11 +57,14 @@ function serialize(str){
 function getPoints(){
     const Http = new XMLHttpRequest();
     const url = '/points';
+    var new_points = [];
     fetch(url).then(function(response) {
         response.text().then(function(text) {
           console.log(text);
           var x = JSON.parse(text);
           for(var j = 0; j < x.length; j++){
+
+            // creating cards for each element
             var card = document.createElement('div');
             card.className = 'locationCard';
     
@@ -78,6 +81,29 @@ function getPoints(){
             description.innerHTML = x[j].description;
             card.appendChild(description);
             document.getElementById('exploreContainer').appendChild(card);
+
+            // adding points
+            new_points.push({
+                type:'FeatureCollection',
+                features: [{
+                    type: 'Feature',
+                    geometry: {
+                        type: 'Point',
+                        coordinates:[x[j]["latitude"],x[j]["longitude"]]
+                    },
+                    properties: {
+                        title: x[j]["name"],
+                        description: x[j]["description"]
+                    }
+                }]
+            })
+            map.addSource("landmarks", {
+                type:"geojson",
+                data: new_points,
+                cluster: true,
+                clusterMaxZoom: 14, // Max zoom to cluster points on
+                clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
+            })
         }
         });
       });
@@ -96,11 +122,15 @@ map.on('load', function() {
         clusterMaxZoom: 14, // Max zoom to cluster points on
         clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
     });
+    var src = "landmarks"
+
+    getPoints();
+    while (map.getSource(src) == null) {};
 
     map.addLayer({
         id: "clusters",
         type: "circle",
-        source: "earthquakes",
+        source: src,
         filter: ["has", "point_count"],
         paint: {
             // Use step expressions (https://docs.mapbox.com/mapbox-gl-js/style-spec/#expressions-step)
@@ -132,7 +162,7 @@ map.on('load', function() {
     map.addLayer({
         id: "cluster-count",
         type: "symbol",
-        source: "earthquakes",
+        source: src,
         filter: ["has", "point_count"],
         layout: {
             "text-field": "{point_count_abbreviated}",
@@ -144,7 +174,7 @@ map.on('load', function() {
     map.addLayer({
         id: "unclustered-point",
         type: "circle",
-        source: "earthquakes",
+        source: src,
         filter: ["!", ["has", "point_count"]],
         paint: {
             "circle-color": "#05386B",
@@ -158,7 +188,7 @@ map.on('load', function() {
     map.on('click', 'clusters', function (e) {
         var features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
         var clusterId = features[0].properties.cluster_id;
-        map.getSource('earthquakes').getClusterExpansionZoom(clusterId, function (err, zoom) {
+        map.getSource(src).getClusterExpansionZoom(clusterId, function (err, zoom) {
             if (err)
                 return;
 
