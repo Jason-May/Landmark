@@ -61,35 +61,72 @@ var geojson = {
   }]
 };
 
-function userPoint(){
+function renderPoints(){
+  var geojson = {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [-77.032, 38.913]
+      },
+      properties: {
+        title: 'Mapbox',
+        description: 'Washington, D.C.'
+      }
+    },
+    {
+      type: 'Feature',
+      geometry: {
+        type: 'Point',
+        coordinates: [-122.414, 37.776]
+      },
+      properties: {
+        title: 'Mapbox',
+        description: 'San Francisco, California'
+      }
+    }]
+  };
+
   const Http = new XMLHttpRequest();
   const url = '/points';
   fetch(url).then(function(response) {
       response.text().then(function(text) {
-        console.log(text);
         var x = JSON.parse(text);
         var i = 3;
         for(var j = 0; j < x.length; j++){
-          geojson.features[i].type = 'Feature';
-          geojson.features[i].geometry.type = 'Point';
-          geojson.features[i].geometry.coordinates = "[" + x[j].latitude + ", " + x[j].longitude + "]";
-          geojson.features[i].properties.title = x[j].name;
-          geojson.features[i].properties.description = x[j].description;
+          geojson.features[i] = {
+            type:'FeatureCollection',
+            features: [{
+                type: 'Feature',
+                geometry: {
+                    type: 'Point',
+                    coordinates:[x[j].latitude,x[j].longitude]
+                },
+                properties: {
+                    title: x[j].name,
+                    description: x[j].description
+                }
+            }]
+          }
+          i++;
+          console.log(x[j].latitude);
+          console.log(geojson.features[i].geometry.latitude);
         }
       });
     });
+
+  // add markers to map
+  geojson.features.forEach(function(marker) {
+    // create a HTML element for each feature
+    var el = document.createElement('div');
+    el.className = 'marker';
+
+    // make a marker for each feature and add to the map
+    new mapboxgl.Marker(el)
+      .setLngLat(marker.geometry.coordinates)
+      .setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
+      .setHTML('<h3>' + marker.properties.title + '</h3><p>' + marker.properties.description + '</p>'))
+      .addTo(map);
+  });
 }
-
-// add markers to map
-geojson.features.forEach(function(marker) {
-  // create a HTML element for each feature
-  var el = document.createElement('div');
-  el.className = 'marker';
-
-  // make a marker for each feature and add to the map
-  new mapboxgl.Marker(el)
-    .setLngLat(marker.geometry.coordinates)
-    .setPopup(new mapboxgl.Popup({ offset: 25 }) // add popups
-    .setHTML('<h3>' + marker.properties.title + '</h3><p>' + marker.properties.description + '</p>'))
-    .addTo(map);
-});

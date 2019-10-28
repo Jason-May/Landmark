@@ -72,7 +72,13 @@ function getPoints(){
             name.innerHTML = x[j].name;
             for (var i = 0; i < 5; i++){
                 var rating = document.createElement('i');
-                rating.className = "fa fa-star";
+                if(x[j].rating >= 1){
+                    rating.className = "fa fa-star";
+                    x[j].rating --;
+                }
+                else{
+                    rating.className = "fa fa-star-o";
+                }
                 name.appendChild(rating);
             }
             card.appendChild(name);
@@ -122,10 +128,10 @@ map.on('load', function() {
         clusterMaxZoom: 14, // Max zoom to cluster points on
         clusterRadius: 50 // Radius of each cluster when clustering points (defaults to 50)
     });
-    var src = "landmarks"
+    var src = "earthquakes"
 
     getPoints();
-    while (map.getSource(src) == null) {};
+    // while (map.getSource(src) == null) {};
 
     map.addLayer({
         id: "clusters",
